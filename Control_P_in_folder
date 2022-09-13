@@ -1,0 +1,60 @@
+#This script reads all the picture in "Path_folder" (also subdirectories) and then:
+# - save picture info (date, time, path structure, etc...) in a table
+# - export the table in a .csv format
+
+#---------- Packages
+import shutil;import os;import datetime; import pandas as pd;\
+ import piexif; import json; from tqdm import tqdm;\
+ from PIL import Image
+ 
+#---------- Path info        
+Path_folder = r"\\192.168.5.2/Home/1_Chat/JUSUD_2020_2021/FoFa-Images"
+
+
+#---------- Create Emtpy Table 
+Table = {'Path':[],
+         'Site':[],
+         'Camera':[],
+         'Control':[],
+         'P_name':[],
+         'TIME':[]}
+
+Table = pd.DataFrame(Table)
+
+
+#---------- Fill in information (loop per picture)
+picture_name=(".jpeg",".jpg",".JPG",".png")
+
+for path, subdirs, files in tqdm(os.walk(Path_folder)):
+    for name in files:
+        #Test if the document a picture?
+        if name.endswith(picture_name):
+            #Merge full path name to be used
+            Path= os.path.normpath(os.path.join(path, name))
+            try:
+                #Test if picture is readable
+                im=Image.open(Path)
+                #Get data from the picture
+                exif_dict = piexif.load(Path)
+                oth_info = exif_dict['0th']
+                TIME = oth_info[306]
+                TIME = TIME.decode("utf-8")
+                new_row = pd.DataFrame({'Path':[Path],
+                'Site':[Path.split(os.sep)[-6]],
+                'Camera':[Path.split(os.sep)[-5]],
+                'Control':[Path.split(os.sep)[-4]],
+                'P_name':[Path.split(os.sep)[-1]],
+                'TIME':[TIME]})
+                #Write data of the picture in the table
+                Table = pd.concat([Table,new_row])
+                
+            except IOError:
+                    #Error message if a picture is not readable 
+                    print("Following filename not loadable:")
+                    print(Path)
+            
+        
+        
+#---------- Export Table as CSV    
+Table.to_csv(os.path.join(Path_folder,"Control_table.csv"))
+
