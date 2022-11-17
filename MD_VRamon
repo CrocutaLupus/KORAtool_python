@@ -56,65 +56,57 @@ output_paths= [x[0] for x in os.walk(os.path.join(Path_folder, "output"))]
 
 #start loop sorting
 
+#control=directory_output_paths[0]
+#x=output_paths[0]
+#x= from_files[0]
 for control in directory_output_paths:
- 
+    #select site to be sorted in the correct folder:  
+    site = control.split(os.sep)[-3]
     #select film ID to be sorted in the correct folder:  
-    film_id = os.path.basename(os.path.normpath(control))
-
-    #select camera associated
-    film_id_camera =control.split(os.sep)[-2]
-
+    film_id = control.split(os.sep)[-2]
     #select paths in output that concerns film ID
-    from_files = [x for x in output_paths if (film_id == x.split(os.sep)[-1] and film_id_camera == x.split(os.sep)[-2])]
-
+    from_files = [x for x in output_paths if (film_id == x.split(os.sep)[-2] and site == x.split(os.sep)[-3] )]
     #specify path where pictures should be sorted in directory_output
     film_id_path=control
-
-   
     #sort picture by category
     for x in from_files:
-        if "animal_person_vehicle" == x.split(os.sep)[-4]:
+        if "animal_person_vehicle" == x.split(os.sep)[-5]:
             frompath = x.replace("\\","/")
             topath = film_id_path.replace("\\","/") + "/Junk/animal_person_vehicle"
             shutil.move(frompath,topath)
-        if "animal_person" == x.split(os.sep)[-4]:
+        if "animal_person" == x.split(os.sep)[-5]:
             frompath = x.replace("\\","/")
             topath = film_id_path.replace("\\","/") + "/Junk/animal_person"
             shutil.move(frompath,topath)
-        if "animal_vehicle" == x.split(os.sep)[-4]:
+        if "animal_vehicle" == x.split(os.sep)[-5]:
             frompath = x.replace("\\","/")
             topath = film_id_path.replace("\\","/") + "/Junk/animal_vehicle"
             shutil.move(frompath,topath)
-        if "animals" == x.split(os.sep)[-4]:
+        if "animals" == x.split(os.sep)[-5]:
             frompath = x.replace("\\","/")
             topath = film_id_path.replace("\\","/") + "/ToCheck/animals"
             shutil.move(frompath,topath)
-        if "empty" == x.split(os.sep)[-4]:
+        if "empty" == x.split(os.sep)[-5]:
             frompath = x.replace("\\","/")
             topath = film_id_path.replace("\\","/") + "/Junk/empty"
             shutil.move(frompath,topath)
-        if "people" == x.split(os.sep)[-4]:
+        if "people" == x.split(os.sep)[-5]:
             frompath = x.replace("\\","/")
             topath = film_id_path.replace("\\","/") + "/Junk/people"
             shutil.move(frompath,topath)
-        if "person_vehicle" == x.split(os.sep)[-4]:
+        if "person_vehicle" == x.split(os.sep)[-5]:
             frompath = x.replace("\\","/")
             topath = film_id_path.replace("\\","/") + "/Junk/person_vehicle"
             shutil.move(frompath,topath)
-        if "processing_failure" == x.split(os.sep)[-4]:
+        if "processing_failure" == x.split(os.sep)[-5]:
             frompath = x.replace("\\","/")
             topath = film_id_path.replace("\\","/") + "/ToCheck/processing_failure"
             shutil.move(frompath,topath)
-        if "vehicles" == x.split(os.sep)[-4]:
+        if "vehicles" == x.split(os.sep)[-5]:
             frompath = x.replace("\\","/")
             topath = film_id_path.replace("\\","/") + "/Junk/vehicle"
             shutil.move(frompath,topath)
-
-        
 #---------- Produce csv with info
-
-
-
 
 #Get all lowerest path
 lowest_dirs = list()
@@ -128,7 +120,6 @@ for root,dirs,files in os.walk(starting_directory):
 Table = {'Path':[],
          'Site':[],
          'Control':[],
-         'P_name':[],
          'TIME':[],
          'MD_V5_output':[],
          "Nhumans":[],
@@ -137,28 +128,39 @@ Table = {'Path':[],
 Table = pd.DataFrame(Table)
 
 #Fill in information (loop per picture)
+#ld=lowest_dirs[3]
+#picture=os.listdir(ld)[0]
 for ld in tqdm(lowest_dirs):
     for picture in os.listdir(ld):
-
         Path= os.path.normpath(os.path.join(ld,picture))
         if "failure" in Path:
             continue
         else:
             exif_dict = piexif.load(Path)
             oth_info = exif_dict['0th']
-            TIME = oth_info[306]
-            TIME = TIME.decode("utf-8")
-
-            new_row = pd.DataFrame({'Path':[Path],
-                    'Site':[Path.split(os.sep)[-6]],
-                     'Control':[Path.split(os.sep)[-5]],
-                     'P_name':[Path.split(os.sep)[-1]],
-                     'TIME':[TIME],
-                     'MD_V5_output':[Path.split(os.sep)[-2]],
-                     'Nhumans':["NA"],
-                     'Conf_MD_max':["NA"]})
-        
-            Table = pd.concat([Table,new_row])
+            if len(oth_info)==0:
+                TIME = "Not readable"
+                new_row = pd.DataFrame({'Path':[Path],
+                        'Site':[Path.split(os.sep)[-6]],
+                         'Control':[Path.split(os.sep)[-5]],
+                         'P_name':[Path.split(os.sep)[-1]],
+                         'TIME':[TIME],
+                         'MD_V5_output':[Path.split(os.sep)[-2]],
+                         'Nhumans':["NA"],
+                         'Conf_MD_max':["NA"]})
+                Table = pd.concat([Table,new_row])
+            if len(oth_info)> 0:
+                TIME = oth_info[306]
+                TIME = TIME.decode("utf-8")
+                new_row = pd.DataFrame({'Path':[Path],
+                        'Site':[Path.split(os.sep)[-6]],
+                         'Control':[Path.split(os.sep)[-5]],
+                         'P_name':[Path.split(os.sep)[-1]],
+                         'TIME':[TIME],
+                         'MD_V5_output':[Path.split(os.sep)[-2]],
+                         'Nhumans':["NA"],
+                         'Conf_MD_max':["NA"]})
+                Table = pd.concat([Table,new_row])
 
 
 #Add information about number of humans detected
@@ -186,8 +188,8 @@ def get_index_positions(list_of_elems, element):
     return index_pos_list      
 
         
-     
-        
+   
+#img=0        
 for img in tqdm(range(0,len(dat["images"]))):
         #skip loop if picture was not readable:
         if "failure" in dat["images"][img]:
@@ -210,11 +212,9 @@ for img in tqdm(range(0,len(dat["images"]))):
                   Conf_MD[d]=conf
                 #continue only if some humans were detected
                 if categories.count("2")>=1:
-
                     #select only human confidance values
                     indices=get_index_positions(categories, "2")
                     Conf_MD = list(map(Conf_MD. __getitem__, indices))
-
                     #--- add info to the table Nhumans & confidance for each bbox
                     Table.loc[(Table["Site"] == file.split(os.sep)[-4]) &
                       (Table["Control"] == file.split(os.sep)[-3]) &
